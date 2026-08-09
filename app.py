@@ -305,31 +305,77 @@ Investment interests: {profile.get("investment_interests", "Not set")}
 
 
 def ask_news(question):
+    try:
+        # Perform web search directly in Python
+        search_results = web_search.invoke(question)
 
-    return news_agent.invoke(
-        {
-            "messages": [
-                {
-                    "role": "user",
-                    "content": question,
-                }
-            ]
-        }
-    )["messages"][-1].content
+        # Let the LLM summarize the actual search results
+        prompt = f"""
+You are the AlphaVest Financial News Agent.
+
+Analyze the web search results below and answer the user's question.
+
+USER QUESTION:
+{question}
+
+WEB SEARCH RESULTS:
+{search_results}
+
+Instructions:
+- Summarize the most relevant and recent information.
+- Mention important announcements, earnings, products, partnerships,
+  or other financial developments when available.
+- Do not invent information.
+- If the search results do not contain enough information, say so.
+- Include the source names or URLs when they are present in the search results.
+- Do not provide personalized financial advice.
+"""
+
+        return llm.invoke(prompt).content
+
+    except Exception as e:
+        return f"News search failed: {e}"
 
 
 def ask_research(question):
+    try:
+        web_results = web_search.invoke(question)
 
-    return research_agent.invoke(
-        {
-            "messages": [
-                {
-                    "role": "user",
-                    "content": question,
-                }
-            ]
-        }
-    )["messages"][-1].content
+        wiki_results = wiki.invoke(question)
+
+        prompt = f"""
+You are the AlphaVest Company Research Agent.
+
+Use the research sources below to answer the user's question.
+
+USER QUESTION:
+{question}
+
+WEB SEARCH:
+{web_results}
+
+WIKIPEDIA:
+{wiki_results}
+
+Provide:
+- Business Overview
+- Products / Services
+- Competitors
+- Revenue Sources
+- Business Model
+- Recent Announcements
+
+Rules:
+- Use only the information supplied.
+- Do not invent facts.
+- If information is unavailable, say so.
+- Do not provide personalized financial advice.
+"""
+
+        return llm.invoke(prompt).content
+
+    except Exception as e:
+        return f"Company research failed: {e}"
 
 
 def ask_financial(question):
